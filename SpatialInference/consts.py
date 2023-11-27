@@ -10,8 +10,13 @@ TRAINING_FRACTION = 0.9
 DEFAULT_BATCH_SIZE = 261
 SMALLEST_ALLOWED_BATCH = 100
 
-# Prior on epsilon, the RT efficiency concentration parameter [Gamma(alpha, alph)]
-EPSILON_PRIOR = 50
+# Prior on epsilon parameters, the RT efficiency concentration parameter [Beta(alpha, beta)]
+EPSILON_ALPHA_PRIOR = 5
+EPSILON_BETA_PRIOR = 2
+
+# Prior on epsilon_perm parameters, the RT efficiency concentration parameter [Beta(alpha, beta)]
+EPSILON_PERM_ALPHA_PRIOR = 5
+EPSILON_PERM_BETA_PRIOR = 2
 
 # Prior of sigma_SB, the diffusion radius of SBs, in microns
 SIGMA_SB_PRIOR = 100
@@ -23,8 +28,8 @@ RHO_SB_PRIOR = 100
 R_LOC = 3000
 
 # Prior of d_drop_loc and d_drop_scale
-D_DROP_LOC_PRIOR = 1176
-D_DROP_SCALE_PRIOR = 0.29
+D_DROP_LOC_PRIOR = 350
+D_DROP_SCALE_PRIOR = 1
 
 # Prior of d_nuc_loc and d_nuc_scale
 D_NUC_LOC_PRIOR = 72

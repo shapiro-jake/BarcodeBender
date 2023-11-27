@@ -13,8 +13,7 @@ import consts
 import torch
 import torch.utils.data
 
-import logging
-from typing import Tuple, List, Optional, Callable
+from typing import Tuple, List
 
 
 class SparseDataset(torch.utils.data.Dataset):
@@ -123,8 +122,8 @@ class DataLoader:
 
         else:
 
-            # Move the pointer by the number of cells in this minibatch.
-            next_ptr = min(self.ind_list.size, self.ptr + self.cell_batch_size)
+            # # Move the pointer by the number of cells in this minibatch.
+            # next_ptr = min(self.ind_list.size, self.ptr + self.cell_batch_size)
 
             # Decide on CB indices.
             # cell_inds = self.ind_list[self.ptr:next_ptr]  
@@ -133,8 +132,8 @@ class DataLoader:
             # Get a dense tensor from the sparse matrix.
             dense_tensor = sparse_collate(csr_list)
 
-            # Increment the pointer and return the minibatch.
-            self.ptr = next_ptr
+            # # Increment the pointer and return the minibatch.
+            # self.ptr = next_ptr
 
             return dense_tensor
 

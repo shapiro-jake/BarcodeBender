@@ -1,8 +1,6 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 import numpy as np
-import scipy.sparse as sp
 import torch
-from scipy.stats import gaussian_kde
 from load_h5ad import load_data
 import consts
 
@@ -18,27 +16,23 @@ class SingleCellSBCountsDatasetV0:
                mapped_input_file: str,
                ambient_input_file: str,
                model_name: str,
-               SB_locations: List[tuple(float)]
-            #    confidently_mapped_inds: List[str],
-            #    surely_ambient_inds: List[str],
+               SB_locations: List[Tuple[float]]
                ):
 
         self.mapped_input_file = mapped_input_file
         self.ambient_input_file = ambient_input_file
         self.model_name = model_name
         self.SB_locations = SB_locations
-        # self.confidently_mapped_inds = confidently_mapped_inds
-        # self.surely_ambient_inds = surely_ambient_inds
 
         # Load the dataset
         self.data = load_data(self.mapped_input_file)
-        self.num_CBs = len(self.data.obs_names)
-        self.num_SBs = len(self.data.var_names)
+        self.num_CBs = len(self.data['CBs'])
+        self.num_SBs = len(self.data['SBs'])
         
         self.ambient_data = load_data(self.ambient_input_file)
 
         # Get the priors
-        self.priors = self.get_priors()
+        self.priors = self._get_priors()
 
 
     def _get_priors(self) -> Dict[str, Union[float, torch.Tensor]]:
@@ -46,6 +40,7 @@ class SingleCellSBCountsDatasetV0:
         self._estimate_chi_ambient(priors)
         self._get_empty_priors(priors)
         self._get_nuc_priors(priors)
+        print(f'Priors: {priors}')
         return priors
 
 

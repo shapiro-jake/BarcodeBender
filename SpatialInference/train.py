@@ -2,16 +2,14 @@
 
 import pyro
 from pyro.infer import SVI
-import torch
 
 from model import InferPositionsPyroModel
 from dataprep import DataLoader
 from exceptions import NanException
-import consts
 
 import numpy as np
 
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 import time
 from datetime import datetime
 import sys
@@ -94,7 +92,7 @@ def run_training(model: InferPositionsPyroModel,
             if epoch == start_epoch + 1:
                 t = time.time()
 
-            model.train()
+            # model.train()
             total_epoch_loss_train = train_epoch(svi, train_loader)
 
             train_elbo.append(-total_epoch_loss_train)
@@ -107,6 +105,7 @@ def run_training(model: InferPositionsPyroModel,
                 model.loss['learning_rate']['epoch'].append(epoch)
                 model.loss['learning_rate']['value'].append(last_learning_rate)
 
+            print(pyro.params('nuclei_locations'))
             if epoch == start_epoch + 1:
                 time_per_epoch = time.time() - t
                 print("[epoch %03d]  average training loss: %.4f  (%.1f seconds per epoch)"
