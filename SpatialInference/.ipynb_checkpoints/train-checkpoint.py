@@ -2,41 +2,37 @@
 
 import pyro
 from pyro.infer import SVI
-
-from model import InferPositionsPyroModel
-from dataprep import DataLoader
-from exceptions import NanException
-
 import numpy as np
 
-from typing import Tuple, List
+from exceptions import NanException
+from typing import List
 import time
 from datetime import datetime
 import sys
+import random
+
+from consts import GET_SB_LOCS
+from plotting import plot_nuc_locs, plot_SB_scale_factors, plot_SB_diffusion_clouds, plot_elbo
 
 
 def train_epoch(svi: SVI,
                 data) -> float:
-                # train_loader: DataLoader) -> float:
     """Train a single epoch.
 
     Args:
         svi: The pyro object used for stochastic variational inference.
-        train_loader: Dataloader for training set.
+        data: Data of cluster 18 nuclei.
 
     Returns:
         total_epoch_loss_train: The loss for this epoch of training, which is
-            -ELBO, normalized by the number of items in the training set.
+            -ELBO, normalized by the number of items in the data set.
 
     """
 
-    # Initialize loss accumulator and training set size.
+    # Initialize loss accumulator and data set size.
     epoch_loss = 0.
     normalizer_train = 0.
-
-    # # Train an epoch by going through each mini-batch.
-    # for x_cell_batch in train_loader:
-
+    
     # Perform gradient descent step and accumulate loss.
     epoch_loss += svi.step(data)
     normalizer_train += data.shape[0]
@@ -47,51 +43,36 @@ def train_epoch(svi: SVI,
     return total_epoch_loss_train
 
 
-def run_training(model: InferPositionsPyroModel,
-                 svi: pyro.infer.SVI,
-                 data,
-                 # train_loader: DataLoader,
-                #  test_loader: DataLoader,
-                 epochs: int,
-                 learning_rate: float) -> Tuple[List[float], List[float]]:
-    """Run an entire course of training, evaluating on a tests set periodically.
+def run_training(svi, data, epochs: int, run_ID: str) -> List[float]:
+    """Run an entire course of training.
 
         Args:
-            model: The model, here in order to store train and tests loss.
-            args: Parsed arguments, which get saved to checkpoints.
             svi: The pyro object used for stochastic variational inference.
-            train_loader: Dataloader for training set.
-            test_loader: Dataloader for tests set.
+            data: Data of cluster 18 nuclei.
             epochs: Number of epochs to run training.
-            output_filename: User-specified output file, used to construct
-                checkpoint filenames.
-            test_freq: Test set loss is calculated every test_freq epochs of
-                training.
-            final_elbo_fail_fraction: Fail if final test ELBO >=
-                best ELBO * (1 + this value)
-            epoch_elbo_fail_fraction: Fail if current test ELBO >=
-                previous ELBO * (1 + this value)
-            ckpt_tarball_name: Name of saved tarball for checkpoint.
-            checkpoint_freq: Checkpoint after this many minutes
+            learning_rate: The learning rate to be used
 
         Returns:
-            total_epoch_loss_train: The loss for this epoch of training, which
-                is -ELBO, normalized by the number of items in the training set.
+            train_elbo: The loss for each epoch of training
 
     """
 
+    # Decide which SBs to plot diffusion clouds of
+    num_SBs = len(GET_SB_LOCS())
+    SB_idxs = random.choices(range(num_SBs), k = 20)
+
+    
     # Initialize train and tests ELBO with empty lists.
     train_elbo = []
-    lr = []
 
     # Run training loop.  Use try to allow for keyboard interrupt.
     try:
-        start_epoch = (1 if (model is None) or (len(model.loss['train']['epoch']) == 0)
-                       else model.loss['train']['epoch'][-1] + 1)
+        start_epoch = 1
         print(f'Start epoch: {start_epoch}')
 
         for epoch in range(start_epoch, epochs + 1):
             print(f'Training epoch {epoch}...')
+            
             # Display duration of an epoch (use 2 to avoid initializations).
             if epoch == start_epoch + 1:
                 t = time.time()
@@ -100,16 +81,7 @@ def run_training(model: InferPositionsPyroModel,
             total_epoch_loss_train = train_epoch(svi, data)
 
             train_elbo.append(-total_epoch_loss_train)
-            last_learning_rate = learning_rate
-            lr.append(last_learning_rate)
 
-            if model is not None:
-                model.loss['train']['epoch'].append(epoch)
-                model.loss['train']['elbo'].append(-total_epoch_loss_train)
-                model.loss['learning_rate']['epoch'].append(epoch)
-                model.loss['learning_rate']['value'].append(last_learning_rate)
-
-            print(pyro.params('nuclei_locations'))
             if epoch == start_epoch + 1:
                 time_per_epoch = time.time() - t
                 print("[epoch %03d]  average training loss: %.4f  (%.1f seconds per epoch)"
@@ -117,6 +89,17 @@ def run_training(model: InferPositionsPyroModel,
             else:
                 print("[epoch %03d]  average training loss: %.4f"
                         % (epoch, total_epoch_loss_train))
+                
+            if epoch % 1000 == 0:
+                print(f'Plotting nuclei locations for epoch {epoch}')
+                plot_nuc_locs(epoch, run_ID)
+                
+                print(f'Plotting SB scale factors for epoch {epoch}')
+                plot_SB_scale_factors(epoch, run_ID)
+                
+                # Work in progress
+                # print(f'SB diffusion clouds for epoch {epoch}')
+                # plot_SB_diffusion_clouds(epoch, run_ID, SB_idxs)
 
 
     # Exception allows program to produce output when terminated by a NaN.
@@ -127,5 +110,7 @@ def run_training(model: InferPositionsPyroModel,
         sys.exit(1)
 
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-
+    
+    plot_elbo(train_elbo, run_ID)
+    
     return train_elbo
