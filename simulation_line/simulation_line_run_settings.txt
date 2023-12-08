@@ -2,4 +2,4 @@ simulation_line Settings
 
 Learning rate: 0.005
 Betas: (0.95, 0.999)
-Epochs: 2500
+Epochs: 2400

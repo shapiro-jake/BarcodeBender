@@ -61,7 +61,7 @@ class TorchPoissonLogParameterization(ExponentialFamily):
 
     @property
     def _natural_params(self):
-        return (torch.log(self.log_rate.exp()),)
+        return (self.log_rate,)
 
     def _log_normalizer(self, x):
         return x

@@ -12,6 +12,9 @@ from pyro.infer.autoguide.initialization import init_to_sample
 import pyro.poutine as poutine
 from pyro.optim import Adam
 
+import umap
+from sklearn.preprocessing import StandardScaler
+
 
 import numpy as np
 import pandas as pd
@@ -81,11 +84,11 @@ def infer_simulation(data, run_ID, init, epochs):
     print("Inference procedure complete.")
 
 if __name__ == "__main__":
-    run_ID = 'simulation_line'
-    sim = 'line'
+    run_ID = 'c18_Normal_Cauchy_wide'
+    sim = False
     init = 'random'
     epochs = 2400
-    print_plots = True
+    print_plots = False
 
     
     c18_CBs = load_data('slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad')['CBs']
@@ -129,7 +132,7 @@ if __name__ == "__main__":
 
         simulation_model = poutine.condition(cluster_18_simulation_model, {'nuclei_x_n': nuclei_x_n, 'nuclei_y_n': nuclei_y_n})
         data = simulation_model()
-
+        
     if print_plots:
         plot_simulation(run_ID, nuclei_x_n, nuclei_y_n, num_nuclei, data)
     

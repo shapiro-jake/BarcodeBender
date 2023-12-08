@@ -3,7 +3,7 @@ import pyro.distributions as dist
 
 import torch
 from torch import nn
-from torch.distributions import constraints, normal
+from torch.distributions import constraints, normal, cauchy
 
 from PoissonLog import PoissonLogParameterization
 
@@ -80,8 +80,8 @@ def cluster_18_model(x: torch.Tensor):
 
         
         # Calculate the absolute number of each SB at each nuclei location
-        log_diff_kernel_x_nb = normal.Normal(loc=SB_locations_b[:,0], scale = sigma_SB_b).log_prob(nuclei_x_n[:, None])
-        log_diff_kernel_y_nb = normal.Normal(loc=SB_locations_b[:,1], scale = sigma_SB_b).log_prob(nuclei_y_n[:, None])
+        log_diff_kernel_x_nb = cauchy.Cauchy(loc=SB_locations_b[:,0], scale = sigma_SB_b).log_prob(nuclei_x_n[:, None])
+        log_diff_kernel_y_nb = cauchy.Cauchy(loc=SB_locations_b[:,1], scale = sigma_SB_b).log_prob(nuclei_y_n[:, None])
         log_diff_kernel_nb = torch.log(rho_SB_b) + log_diff_kernel_x_nb + log_diff_kernel_y_nb
         log_chi_nuc_nb = log_diff_kernel_nb - torch.logsumexp(log_diff_kernel_nb, dim = -1, keepdim = True)
         
@@ -112,7 +112,7 @@ def cluster_18_model(x: torch.Tensor):
         log_mu_nb = torch.log(epsilon_capture_n)[:, None] + torch.log(d_nuc_n)[:, None] + log_chi_nuc_nb
         # mu = torch.zeros((n_CBs, n_SBs))
         
-        log_lam_nb = torch.log(epsilon_capture_n)[:, None] * torch.log(d_drop_n)[:, None] * torch.log(chi_ambient)[None, :]
+        log_lam_nb = torch.log(epsilon_capture_n)[:, None] + torch.log(d_drop_n)[:, None] + torch.log(chi_ambient)[None, :]
         # print(lam[0].sum())
         
         log_rate_nb = torch.logaddexp(log_mu_nb, log_lam_nb)
@@ -187,8 +187,8 @@ def cluster_18_simulation_model():
         nuclei_y_n = pyro.sample('nuclei_y_n', dist.Uniform(consts.R_LOC_Y - 1.5, consts.R_LOC_Y + 1.5))
         
         # Calculate the absolute number of each SB at each nuclei location
-        log_diff_kernel_x_nb = normal.Normal(loc=SB_locations_b[:,0], scale = sigma_SB_b).log_prob(nuclei_x_n[:, None])
-        log_diff_kernel_y_nb = normal.Normal(loc=SB_locations_b[:,1], scale = sigma_SB_b).log_prob(nuclei_y_n[:, None])
+        log_diff_kernel_x_nb = cauchy.Cauchy(loc=SB_locations_b[:,0], scale = sigma_SB_b).log_prob(nuclei_x_n[:, None])
+        log_diff_kernel_y_nb = cauchy.Cauchy(loc=SB_locations_b[:,1], scale = sigma_SB_b).log_prob(nuclei_y_n[:, None])
         diff_kernel_nb = rho_SB_b * (log_diff_kernel_x_nb + log_diff_kernel_y_nb).exp()
         chi_nuc_nb = diff_kernel_nb / diff_kernel_nb.sum(1)[:, None]
         
@@ -212,7 +212,7 @@ def cluster_18_simulation_model():
         # Sample d_drop and automatically expand(n_CBs) due to plate
         d_drop_n = pyro.sample("d_drop", dist.LogNormal(loc = d_drop_loc_n, scale = d_drop_scale_n))
 
-        # Calculate the signal and noise rates, both of which are [261, 9497 tensors]
+        # Calculate the signal and noise rates, both of which are [203, 10331 tensors]
         mu = epsilon_capture_n[:, None] * d_nuc[:, None] * chi_nuc_nb
         # mu = torch.zeros((n_CBs, n_SBs))
         

@@ -16,16 +16,16 @@ D_NUC_LOC_PRIOR = 5.2
 D_NUC_SCALE_PRIOR = 0.3
 
 # Prior of rho_SB parameters, the scale factor of the beads [LogNormal(loc, scale)]
-RHO_SB_LOC_PRIOR = 2.1
+RHO_SB_LOC_PRIOR = 1.8
 RHO_SB_SCALE_PRIOR = 0.75
 
 # Prior of sigma_SB parameters, the diffusion radius of the beads [LogNormal(loc, scale)]
 SIGMA_SB_LOG_NORMAL_LOC_PRIOR = -2.6 # 75 um
-SIGMA_SB_LOG_NORMAL_SCALE_PRIOR = 0.5
+SIGMA_SB_LOG_NORMAL_SCALE_PRIOR = 1.
 
 # Prior of sigma_SB parameters, the diffusion radius of the beads, for simulation [Normal(loc, scale)]
-SIGMA_SB_LOC_PRIOR = 0.075 # 75 um
-SIGMA_SB_SCALE_PRIOR = 0.001
+SIGMA_SB_LOC_PRIOR = 0.15 # 75 um
+SIGMA_SB_SCALE_PRIOR = 0.005
 
 # Prior of starting cell positions, (4,250, 2,750)
 R_LOC_X = 4.25
