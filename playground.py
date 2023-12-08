@@ -19,12 +19,12 @@ import matplotlib.pyplot as plt
 # plot_ground_truth(cluster_to_plot = 18, savefile = 'cluster_18_ground_truth.png')
 # plot_ground_truth(savefile = 'ground_truth.png')
 
-SB_locs = consts.GET_SB_LOCS
+# SB_locs = consts.GET_SB_LOCS
 
-unconditioned_model = poutine.uncondition(cluster_18_simulation_model)
-model_trace = poutine.trace(unconditioned_model).get_trace()
+# unconditioned_model = poutine.uncondition(cluster_18_simulation_model)
+# model_trace = poutine.trace(unconditioned_model).get_trace()
 
-print(model_trace.nodes)
+# print(model_trace.nodes)
 
 # data = model_trace.nodes['obs']['value'][0]
 

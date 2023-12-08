@@ -4,9 +4,57 @@ import pyro
 from consts import GET_SB_LOCS
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+from scipy.stats import gaussian_kde
 
 import numpy as np
 import pandas as pd
+
+def plot_simulation(run_ID, nuclei_x_n, nuclei_y_n, num_nuclei, data):
+    fig, ax = plt.subplots(figsize = (6, 6))
+    ax.set_title(f'{run_ID} Nuclei Locations')
+    ax.set_xlabel('x_um')
+    ax.set_ylabel('y_um')
+    ax.set_xlim(0,6500)
+    ax.set_ylim(0,6500)
+
+    x_coords = nuclei_x_n.detach().numpy() * 1000
+    y_coords = nuclei_y_n.detach().numpy() * 1000
+    
+    ax.scatter(x_coords, y_coords, s = 10, c = range(num_nuclei), cmap = 'viridis', alpha = 0.5)
+    plt.savefig(f'{run_ID}/{run_ID}_data/{run_ID}_nuc_locs.png')
+
+    SB_LOCS = GET_SB_LOCS
+
+    for i, nuc in enumerate(data):
+        if i % 50 == 0:
+            plot_CB(nuc, SB_LOCS, f'{run_ID}/{run_ID}_data/{run_ID}_nuc_{i}.png')
+
+    simulated_umi_counts = np.array(data.sum(axis=1)).squeeze()
+    log_simulated_umi_counts = np.log(simulated_umi_counts)
+    log_simulated_umi_counts = log_simulated_umi_counts[log_simulated_umi_counts > 0]
+
+    print(f'Max log UMI counts: {np.ceil(log_simulated_umi_counts.max())}')
+
+    x = np.arange(
+        0,
+        np.ceil(log_simulated_umi_counts.max()) + 0.01,
+        0.1
+    )
+
+    k = gaussian_kde(log_simulated_umi_counts)
+    density = k.evaluate(x)
+    log_peak_ind = np.argmax(density)
+    log_peak = x[log_peak_ind]
+
+    CB_UMI_loc = log_peak
+    CB_UMI_scale = np.std(log_simulated_umi_counts)
+
+    fig, ax = plt.subplots()
+    ax.hist(log_simulated_umi_counts, bins = x)
+    ax.set_ylabel('Number of Nuclei')
+    ax.set_xlabel('Log(SB UMIs)')
+    ax.set_title(f'Distribution of Log(SB UMIs) of {run_ID} Nuclei;\nMean: {round(CB_UMI_loc, 2)}, Std. Dev.: {round(CB_UMI_scale, 2)}')
+    plt.savefig(f'{run_ID}/{run_ID}_data/{run_ID}_SB_UMI_dist.png')
 
 def plot_ground_truth(cluster_to_plot = None, savefile = None):
     nrows = 1
@@ -42,7 +90,7 @@ def plot_nuc_locs(epoch, run_ID):
     num_nuclei = len(x_coords)
 
     ax.scatter(x_coords, y_coords, s = 10, c = range(num_nuclei), cmap = 'viridis', alpha = 0.5)
-    plt.savefig(f'{run_ID}/nuc_locs_epoch_{epoch}_{run_ID}.png')
+    plt.savefig(f'{run_ID}/{run_ID}_nuc_locs/nuc_locs_epoch_{epoch}_{run_ID}.png')
     plt.close()
 
     
@@ -72,7 +120,7 @@ def plot_SB_scale_factors(epoch, run_ID):
     sc = ax.scatter(plotting_df['x_coords'], plotting_df['y_coords'], s = 10, c = plotting_df['rho_SBs'], alpha = 0.5, cmap = 'Blues')
     
     fig.colorbar(sc)
-    plt.savefig(f'{run_ID}/SB_scale_factors_epoch_{epoch}_{run_ID}.png')
+    plt.savefig(f'{run_ID}/{run_ID}_SB_scale_factors/SB_scale_factors_epoch_{epoch}_{run_ID}.png')
     plt.close()
 
     

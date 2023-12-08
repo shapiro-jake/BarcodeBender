@@ -4,6 +4,8 @@ import torch
 from torch.distributions import constraints
 from torch.distributions.exp_family import ExponentialFamily
 from torch.distributions.utils import broadcast_all
+
+import pyro
 import pyro.distributions as dist
 
 

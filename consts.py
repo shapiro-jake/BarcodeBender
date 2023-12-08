@@ -38,19 +38,18 @@ D_DROP_SCALE_PRIOR = 0.3
 # Calculate the ambient SB profile from pre-determined ambient droplets
 def CALCULATE_AMBIENT():
     print('Calculating ambient profile...')
-    AMBIENT_DATA_H5AD_FILE = 'ambient_CB_SB_counts_top_SBs.h5ad'
+    AMBIENT_DATA_H5AD_FILE = 'slide_tags_data/ambient_CB_SB_counts_top_SBs.h5ad'
     CHI_AMBIENT = np.array(load_data(AMBIENT_DATA_H5AD_FILE)['matrix'].sum(axis = 0)).squeeze()
     CHI_AMBIENT = torch.tensor(CHI_AMBIENT / CHI_AMBIENT.sum()).float()
     return CHI_AMBIENT
 
 CHI_AMBIENT = CALCULATE_AMBIENT()
-# CHI_AMBIENT_SIMULATION = torch.Tensor.new_full((9497,), float(1/9497))
 
 # Get the (x, y) coordinates, in um, of an ordered list of SBs, the same order as the SBs are listed in the h5ad files
 def GET_SB_LOCS():
     print('Getting SB locations...')
     ORDERED_SB_LOCATIONS = []
-    with open('ordered_top_SB_coordinates.txt', 'r') as f:
+    with open('slide_tags_data/ordered_top_SB_coordinates.txt', 'r') as f:
         for line in f.readlines():
             SB, x_coord, y_coord = line.split(', ')
             x_coord = float(x_coord)/1000.
