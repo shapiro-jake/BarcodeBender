@@ -96,7 +96,7 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
                 print(f'Plotting errors for epoch {epoch}...')
                 mean_loc_error = plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
                 if mean_loc_error < best_loc_error:
-                    best_parameter_save_file = f'{run_ID}/{run_ID}_best_parameters_epoch_{epoch}.save'
+                    best_parameter_save_file = f'{run_ID}/{run_ID}_parameters/{run_ID}_best_parameters_epoch_{epoch}.save'
 
                     print(f"Better parameters at epoch {epoch}, saving parameters to '{best_parameter_save_file}'...")
                     pyro.get_param_store().save(best_parameter_save_file)
@@ -107,7 +107,7 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
     except KeyboardInterrupt:
         print(f"Inference procedure stopped by keyboard interrupt at epoch {epoch}... ")
         
-        parameter_save_file = f'{run_ID}/{run_ID}_parameters_epoch_{epoch}.save'
+        parameter_save_file = f'{run_ID}/{run_ID}_parameters/{run_ID}_parameters_epoch_{epoch}.save'
         print(f"Saving parameters to '{parameter_save_file}'...")
         pyro.get_param_store().save(parameter_save_file)
         

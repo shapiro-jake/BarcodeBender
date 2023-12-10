@@ -55,6 +55,8 @@ def plot_simulation(run_ID, nuclei_x_n, nuclei_y_n, num_nuclei, data):
     ax.set_xlabel('Log(SB UMIs)')
     ax.set_title(f'Distribution of Log(SB UMIs) of {run_ID} Nuclei;\nMean: {round(CB_UMI_loc, 2)}, Std. Dev.: {round(CB_UMI_scale, 2)}')
     plt.savefig(f'{run_ID}/{run_ID}_data/{run_ID}_SB_UMI_dist.png')
+    plt.close()
+
 
 def plot_ground_truth(cluster_to_plot = None, savefile = None):
     nrows = 1
@@ -89,8 +91,38 @@ def plot_nuc_locs(epoch, run_ID):
     y_coords = pyro.param('AutoDelta.nuclei_y_n').detach().numpy() * 1000
     num_nuclei = len(x_coords)
 
-    ax.scatter(x_coords, y_coords, s = 10, c = range(num_nuclei), cmap = 'viridis', alpha = 0.5)
+    ax.scatter(x_coords, y_coords, s = 5, c = range(num_nuclei), cmap = 'viridis', alpha = 1)
     plt.savefig(f'{run_ID}/{run_ID}_nuc_locs/nuc_locs_epoch_{epoch}_{run_ID}.png')
+    plt.close()
+    
+    fig, ax = plt.subplots(figsize = (6, 6))
+    ax.set_title(f'Nuclei sizes at epoch {epoch} for run: {run_ID}')
+    ax.set_xlabel('x_um')
+    ax.set_ylabel('y_um')
+    ax.set_xlim(0,6500)
+    ax.set_ylim(0,6500)
+    
+    d_nucs = pyro.param('AutoDelta.d_nuc_n').detach().numpy()
+    plotting_df = pd.DataFrame(data = {'x_coords': x_coords, 'y_coords': y_coords, 'd_nucs': d_nucs}).sort_values('d_nucs', ascending=True)
+
+    sc = ax.scatter(plotting_df['x_coords'], plotting_df['y_coords'], s = 5, c = plotting_df['d_nucs'], alpha = 1, cmap = 'Blues')
+    fig.colorbar(sc)
+    plt.savefig(f'{run_ID}/{run_ID}_nuc_sizes/nuc_sizes_epoch_{epoch}_{run_ID}.png')
+    plt.close()
+    
+    fig, ax = plt.subplots(figsize = (6, 6))
+    ax.set_title(f'Droplet sizes at epoch {epoch} for run: {run_ID}')
+    ax.set_xlabel('x_um')
+    ax.set_ylabel('y_um')
+    ax.set_xlim(0,6500)
+    ax.set_ylim(0,6500)
+    
+    d_nucs = pyro.param('AutoDelta.d_drop_n').detach().numpy()
+    plotting_df = pd.DataFrame(data = {'x_coords': x_coords, 'y_coords': y_coords, 'd_drops': d_nucs}).sort_values('d_drops', ascending=True)
+
+    sc = ax.scatter(plotting_df['x_coords'], plotting_df['y_coords'], s = 5, c = plotting_df['d_drops'], alpha = 1, cmap = 'Blues')
+    fig.colorbar(sc)
+    plt.savefig(f'{run_ID}/{run_ID}_droplet_sizes/droplet_sizes_epoch_{epoch}_{run_ID}.png')
     plt.close()
 
     
@@ -103,7 +135,6 @@ def plot_elbo(elbo, run_ID):
     ax.legend()
     plt.savefig(f'{run_ID}/ELBO_plot_{run_ID}.png')
     plt.close()
-
     
 def plot_SB_scale_factors(epoch, run_ID):
     fig, ax = plt.subplots()
@@ -113,7 +144,7 @@ def plot_SB_scale_factors(epoch, run_ID):
     ax.set_xlim(0,6500)
     ax.set_ylim(0,6500)
     
-    rho_SBs = pyro.param('AutoDelta.rho_SB').detach().numpy()
+    rho_SBs = pyro.param('rho_SB_b').detach().numpy()
     SB_LOCS = np.asarray(GET_SB_LOCS) * 1000
     x_SB_coords, y_SB_coords = SB_LOCS[:,0], SB_LOCS[:,1]
     plotting_df = pd.DataFrame(data = {'x_coords': x_SB_coords, 'y_coords': y_SB_coords, 'rho_SBs': rho_SBs}).sort_values('rho_SBs', ascending=True)
@@ -165,27 +196,27 @@ def plot_CB(counts, SB_locs, savefile = None):
     plt.close()
 
         
-def plot_SB_diffusion_clouds(epoch, run_ID, idxs):
-    fig, ax = plt.subplots()
-    ax.set_title(f'Diffusion clouds for {len(idxs)} SBs at epoch {epoch} for run: {run_ID}')
-    ax.set_xlabel('x_um')
-    ax.set_ylabel('y_um')
-    ax.set_xlim(0,6500)
-    ax.set_ylim(0,6500)
+# def plot_SB_diffusion_clouds(epoch, run_ID, idxs):
+#     fig, ax = plt.subplots()
+#     ax.set_title(f'Diffusion clouds for {len(idxs)} SBs at epoch {epoch} for run: {run_ID}')
+#     ax.set_xlabel('x_um')
+#     ax.set_ylabel('y_um')
+#     ax.set_xlim(0,6500)
+#     ax.set_ylim(0,6500)
     
-    SB_LOCS = np.asarray(GET_SB_LOCS) * 1000
-    x_SB_coords, y_SB_coords = SB_LOCS[:,0], SB_LOCS[:,1]
+#     SB_LOCS = np.asarray(GET_SB_LOCS) * 1000
+#     x_SB_coords, y_SB_coords = SB_LOCS[:,0], SB_LOCS[:,1]
     
-    rho_SBs = pyro.param('AutoDelta.rho_SB').detach().numpy()
-    sigma_SBs = pyro.param('AutoDelta.sigma_SB').detach().numpy()
+#     rho_SBs = pyro.param('AutoDelta.rho_SB_b').detach().numpy()
+#     sigma_SBs = pyro.param('AutoDelta.sigma_SB_b').detach().numpy()
     
-    for idx in idxs:
-        rho_SB = rho_SBs[idx]
-        sigma_SB = sigma_SBs[idx]
-        x_coord, y_coord = x_SB_coords[idx], y_SB_coords[idx]
-        circle = Circle((x_coord, y_coord), sigma_SB, color = rho_SB)
-        ax.add_patch(circle)
+#     for idx in idxs:
+#         rho_SB = rho_SBs[idx]
+#         sigma_SB = sigma_SBs[idx]
+#         x_coord, y_coord = x_SB_coords[idx], y_SB_coords[idx]
+#         circle = Circle((x_coord, y_coord), sigma_SB, color = rho_SB)
+#         ax.add_patch(circle)
     
-    fig.colorbar()
-    plt.savefig(f'{run_ID}/SB_diffusion_clouds_epoch_{epoch}_{run_ID}.png')
-    plt.close()
+#     fig.colorbar()
+#     plt.savefig(f'{run_ID}/SB_diffusion_clouds_epoch_{epoch}_{run_ID}.png')
+#     plt.close()

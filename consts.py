@@ -23,9 +23,12 @@ RHO_SB_SCALE_PRIOR = 0.75
 SIGMA_SB_LOG_NORMAL_LOC_PRIOR = -2.6 # 75 um
 SIGMA_SB_LOG_NORMAL_SCALE_PRIOR = 1.
 
-# Prior of sigma_SB parameters, the diffusion radius of the beads, for simulation [Normal(loc, scale)]
+# Prior of sigma_SB parameters, the diffusion radius of the beads [Normal(loc, scale)]
 SIGMA_SB_LOC_PRIOR = 0.15 # 75 um
 SIGMA_SB_SCALE_PRIOR = 0.005
+
+# Prior of sigma_SB, the diffusion radius of the beads, for simulation
+SIGMA_SB_SIM = 0.075 # 75 um
 
 # Prior of starting cell positions, (4,250, 2,750)
 R_LOC_X = 4.25

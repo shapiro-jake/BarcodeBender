@@ -1,0 +1,5 @@
+simulation_uniform Settings
+
+Learning rate: 0.002
+Betas: (0.95, 0.999)
+Epochs: 2000

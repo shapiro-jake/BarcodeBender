@@ -16,6 +16,8 @@ from pyro.optim import Adam
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
+import math
 import os
 
 
@@ -69,18 +71,18 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
 
     print([item for item in pyro.get_param_store().items()])
     
-    parameter_save_file = f'{run_ID}/{run_ID}_parameters_epoch_{epoch}.save'
+    parameter_save_file = f'{run_ID}/{run_ID}_parameters/{run_ID}_parameters_epoch_{epochs}.save'
     print(f"Saving parameters to '{parameter_save_file}'...")
     pyro.get_param_store().save(parameter_save_file)
     
     print("Inference procedure complete.")
 
 if __name__ == "__main__":
-    run_ID = 'test_error'
+    run_ID = 'test_nuc_drop_sizes'
     sim = 'line'
     init = 'random'
-    epochs = 200
-    print_plots = False
+    epochs = 2000
+    print_plots = True
 
     
     c18_CBs = load_data('slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad')['CBs']
@@ -92,6 +94,9 @@ if __name__ == "__main__":
         os.mkdir(f'{run_ID}/{run_ID}_nuc_locs')
         os.mkdir(f'{run_ID}/{run_ID}_SB_scale_factors')
         os.mkdir(f'{run_ID}/{run_ID}_analysis')
+        os.mkdir(f'{run_ID}/{run_ID}_parameters')
+        os.mkdir(f'{run_ID}/{run_ID}_nuc_sizes')
+        os.mkdir(f'{run_ID}/{run_ID}_droplet_sizes')
     except:
         print('Directories already made...')
     
@@ -102,6 +107,17 @@ if __name__ == "__main__":
         cluster_18_h5ad_file = 'slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad'
         data = load_data(cluster_18_h5ad_file)['matrix']
         data = torch.from_numpy(np.array(data.todense(), dtype=np.float32))
+        
+        ground_truth_df = pd.read_csv('slide_tags_data/gel_2_deep_cutoff_info.csv', index_col = 'CB')
+        ground_truth_df = ground_truth_df[ground_truth_df['seurat_clusters'] == 18].drop('seurat_clusters', axis = 1)
+        gt_nuclei_x_n, gt_nuclei_y_n = [], []
+        for c18_CB in c18_CBs:
+            x_coord, y_coord = ground_truth_df.loc[c18_CB] / 1000.
+            gt_nuclei_x_n.append(x_coord)
+            gt_nuclei_y_n.append(y_coord)
+
+        gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
+        gt_nuclei_y_n = torch.tensor(gt_nuclei_y_n)
     else:
         if sim == 'line':
             width = 2.88
@@ -119,7 +135,17 @@ if __name__ == "__main__":
                 gt_nuclei_y_n.append(y_coord)
 
             gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
-            nuclei_y_n = torch.tensor(gt_nuclei_y_n)
+            gt_nuclei_y_n = torch.tensor(gt_nuclei_y_n)
+        elif sim == 'uniform':
+            radius = 2.5
+            center_x, center_y = 3.2 * torch.ones(num_nuclei), 3.25 * torch.ones(num_nuclei)
+            
+            r_n = radius * torch.rand(num_nuclei).sqrt()
+            theta_n = 2 * math.pi * torch.rand(num_nuclei)
+            
+            gt_nuclei_x_n = center_x + r_n * torch.cos(theta_n)
+            gt_nuclei_y_n = center_y + r_n * torch.sin(theta_n)
+ 
         else:
             raise ValueError
 
@@ -127,6 +153,7 @@ if __name__ == "__main__":
         data = simulation_model()
         
     if print_plots:
+        print('Plotting simulated data...')
         plot_simulation(run_ID, gt_nuclei_x_n, gt_nuclei_y_n, num_nuclei, data)
     
     pyro.clear_param_store()
