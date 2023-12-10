@@ -1,5 +1,6 @@
 import pyro
 import pyro.distributions as dist
+from pyro.distributions import constraints
 
 import torch
 from torch import nn
@@ -36,14 +37,14 @@ def cluster_18_model(x: torch.Tensor):
         # Sample rho_SB, the scale factor of each bead
         rho_SB_loc_prior = consts.RHO_SB_LOC_PRIOR
         rho_SB_scale_prior = consts.RHO_SB_SCALE_PRIOR
-        rho_SB_loc_prior_b = rho_SB_loc_prior * torch.ones(n_SBs)
-        rho_SB_scale_prior_b = rho_SB_scale_prior * torch.ones(n_SBs)
-        rho_SB_b = pyro.sample("rho_SB", dist.LogNormal(rho_SB_loc_prior_b, rho_SB_scale_prior_b))
+        rho_SB_loc_b = pyro.param("rho_SB_loc_b", rho_SB_loc_prior * torch.ones(n_SBs), constraint=constraints.positive)
+        rho_SB_scale_b = pyro.param("rho_SB_scale_b", rho_SB_scale_prior * torch.ones(n_SBs), constraint=constraints.positive)
+        rho_SB_b = pyro.sample("rho_SB", dist.LogNormal(rho_SB_loc_b, rho_SB_scale_b))
 
         sigma_SB_loc_prior = consts.SIGMA_SB_LOC_PRIOR
         sigma_SB_scale_prior = consts.SIGMA_SB_SCALE_PRIOR
-        sigma_SB_loc_b = sigma_SB_loc_prior * torch.ones(n_SBs)
-        sigma_SB_scale_b = sigma_SB_scale_prior * torch.ones(n_SBs)
+        sigma_SB_loc_b = pyro.param("sigma_SB_loc_b", sigma_SB_loc_prior * torch.ones(n_SBs), constraint=constraints.positive)
+        sigma_SB_scale_b = pyro.param("sigma_SB_scale_b", sigma_SB_scale_prior * torch.ones(n_SBs), constraint=constraints.positive)
         sigma_SB_b = pyro.sample("sigma_SB", dist.Normal(sigma_SB_loc_b, sigma_SB_scale_b))
         
         # # Sample sigma_SB, the diffusion radius of each bead
@@ -56,8 +57,8 @@ def cluster_18_model(x: torch.Tensor):
     # Initialize priors for d_drop_loc and d_drop_scale
     d_drop_loc_prior = consts.D_DROP_LOC_PRIOR
     d_drop_scale_prior = consts.D_DROP_SCALE_PRIOR
-    d_drop_loc_n = d_drop_loc_prior * torch.ones(n_CBs)
-    d_drop_scale_n = d_drop_scale_prior * torch.ones(n_CBs)
+    d_drop_loc_n = pyro.param("d_drop_loc_n", d_drop_loc_prior * torch.ones(n_CBs), constraint=constraints.positive)
+    d_drop_scale_n = pyro.param("d_drop_scale_n", d_drop_scale_prior * torch.ones(n_CBs), constraint=constraints.positive)
 
     # Initialize priors for epsilon_capture
     epsilon_capture_alpha_prior = consts.EPSILON_CAPTURE_ALPHA_PRIOR
@@ -68,8 +69,8 @@ def cluster_18_model(x: torch.Tensor):
     # Initialize priors for d_nuc_loc and d_nuc_scale
     d_nuc_loc_prior = consts.D_NUC_LOC_PRIOR
     d_nuc_scale_prior = consts.D_NUC_SCALE_PRIOR
-    d_nuc_loc_n = d_nuc_loc_prior * torch.ones(n_CBs)
-    d_nuc_scale_n = d_nuc_scale_prior * torch.ones(n_CBs)
+    d_nuc_loc_n = pyro.param("d_nuc_loc_n", d_nuc_loc_prior * torch.ones(n_CBs), constraint=constraints.positive)
+    d_nuc_scale_n = pyro.param("d_nuc_scale_n", d_nuc_scale_prior * torch.ones(n_CBs), constraint=constraints.positive)
     
     # One plate: nuclei; data has 203 droplets with 10331 SBs each
     with pyro.plate("data", n_CBs):

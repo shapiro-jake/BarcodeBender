@@ -12,9 +12,6 @@ from pyro.infer.autoguide.initialization import init_to_sample
 import pyro.poutine as poutine
 from pyro.optim import Adam
 
-import umap
-from sklearn.preprocessing import StandardScaler
-
 
 import numpy as np
 import pandas as pd
@@ -31,7 +28,7 @@ def c18_init(site):
         return nuclei_y_n
     return init_to_sample(site)
 
-def infer_simulation(data, run_ID, init, epochs):
+def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
     
     # Let the guide be inferred by AutoDelta to start
     if init == 'random':
@@ -43,11 +40,6 @@ def infer_simulation(data, run_ID, init, epochs):
     # Visualize model and guide
     pyro.render_model(cluster_18_model, model_args=(data,), render_distributions=True, render_params=True, filename = f'{run_ID}/{run_ID}_model_viz.png')
     pyro.render_model(guide, model_args=(data,), render_distributions=True, render_params=True, filename = f'{run_ID}/{run_ID}_guide_viz.png')
-    
-    # # For debugging and visualizing shapes
-    # trace = poutine.trace(cluster_18_model).get_trace(data)
-    # trace.compute_log_prob()  # optional, but allows printing of log_prob shapes
-    # print(trace.format_shapes())
 
     # Loss function is ELBO
     loss_function = Trace_ELBO()
@@ -73,7 +65,7 @@ def infer_simulation(data, run_ID, init, epochs):
     # Run training.
     print("Running inference...")
     
-    run_training(svi=svi, data = data, epochs = epochs, run_ID = run_ID)
+    run_training(svi=svi, data = data, epochs = epochs, run_ID = run_ID, gt_nuclei_x_n = gt_nuclei_x_n, gt_nuclei_y_n = gt_nuclei_y_n)
 
     print([item for item in pyro.get_param_store().items()])
     
@@ -84,10 +76,10 @@ def infer_simulation(data, run_ID, init, epochs):
     print("Inference procedure complete.")
 
 if __name__ == "__main__":
-    run_ID = 'c18_Normal_Cauchy_wide'
-    sim = False
+    run_ID = 'test_error'
+    sim = 'line'
     init = 'random'
-    epochs = 2400
+    epochs = 200
     print_plots = False
 
     
@@ -99,6 +91,7 @@ if __name__ == "__main__":
         os.mkdir(f'{run_ID}/{run_ID}_data')
         os.mkdir(f'{run_ID}/{run_ID}_nuc_locs')
         os.mkdir(f'{run_ID}/{run_ID}_SB_scale_factors')
+        os.mkdir(f'{run_ID}/{run_ID}_analysis')
     except:
         print('Directories already made...')
     
@@ -112,32 +105,32 @@ if __name__ == "__main__":
     else:
         if sim == 'line':
             width = 2.88
-            nuclei_x_n = torch.arange(consts.R_LOC_X - width / 2, consts.R_LOC_X + width / 2, width / num_nuclei)
-            nuclei_y_n = torch.ones(num_nuclei) * consts.R_LOC_Y
+            gt_nuclei_x_n = torch.arange(consts.R_LOC_X - width / 2, consts.R_LOC_X + width / 2, width / num_nuclei)
+            gt_nuclei_y_n = torch.ones(num_nuclei) * consts.R_LOC_Y
         
         elif sim == 'c18':
 
             ground_truth_df = pd.read_csv('slide_tags_data/gel_2_deep_cutoff_info.csv', index_col = 'CB')
             ground_truth_df = ground_truth_df[ground_truth_df['seurat_clusters'] == 18].drop('seurat_clusters', axis = 1)
-            nuclei_x_n, nuclei_y_n = [], []
+            gt_nuclei_x_n, gt_nuclei_y_n = [], []
             for c18_CB in c18_CBs:
                 x_coord, y_coord = ground_truth_df.loc[c18_CB] / 1000.
-                nuclei_x_n.append(x_coord)
-                nuclei_y_n.append(y_coord)
+                gt_nuclei_x_n.append(x_coord)
+                gt_nuclei_y_n.append(y_coord)
 
-            nuclei_x_n = torch.tensor(nuclei_x_n)
-            nuclei_y_n = torch.tensor(nuclei_y_n)
+            gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
+            nuclei_y_n = torch.tensor(gt_nuclei_y_n)
         else:
             raise ValueError
 
-        simulation_model = poutine.condition(cluster_18_simulation_model, {'nuclei_x_n': nuclei_x_n, 'nuclei_y_n': nuclei_y_n})
+        simulation_model = poutine.condition(cluster_18_simulation_model, {'nuclei_x_n': gt_nuclei_x_n, 'nuclei_y_n': gt_nuclei_y_n})
         data = simulation_model()
         
     if print_plots:
-        plot_simulation(run_ID, nuclei_x_n, nuclei_y_n, num_nuclei, data)
+        plot_simulation(run_ID, gt_nuclei_x_n, gt_nuclei_y_n, num_nuclei, data)
     
     pyro.clear_param_store()
-    infer_simulation(data, run_ID, init, epochs)
+    infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs)
     
 
 

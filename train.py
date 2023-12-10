@@ -12,6 +12,7 @@ import time
 from datetime import datetime
 import sys
 from plotting import plot_nuc_locs, plot_SB_scale_factors, plot_elbo
+from analysis import plot_errors
 
 
 
@@ -41,7 +42,7 @@ def train_epoch(svi, data) -> float:
     return total_epoch_loss_train
 
 
-def run_training(svi, data, epochs, run_ID):
+def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
     """Run an entire course of training, evaluating on a tests set periodically.
 
         Returns:
@@ -69,7 +70,10 @@ def run_training(svi, data, epochs, run_ID):
                     
                 print(f'Plotting SB scale factors for epoch {epoch}...')
                 plot_SB_scale_factors(epoch, run_ID)
-
+                
+                print(f'Plotting errors for epoch {epoch}...')
+                plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
+                
             total_epoch_loss_train = train_epoch(svi, data)
             train_elbo.append(-total_epoch_loss_train)
 
@@ -81,12 +85,15 @@ def run_training(svi, data, epochs, run_ID):
                 print("[epoch %03d]  average training loss: %.4f"
                             % (epoch, total_epoch_loss_train))
                 
-            if epoch % 200 == 0:
+            if epoch % 100 == 0:
                 print(f'Plotting nuclei for epoch {epoch}...')
                 plot_nuc_locs(epoch, run_ID)
                     
                 print(f'Plotting SB scale factors for epoch {epoch}...')
                 plot_SB_scale_factors(epoch, run_ID)
+                
+                print(f'Plotting errors for epoch {epoch}...')
+                plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
 
     # Exception allows program to continue after ending inference prematurely.
     except KeyboardInterrupt:
@@ -101,6 +108,9 @@ def run_training(svi, data, epochs, run_ID):
 
         print(f'Plotting SB scale factors for epoch {epoch}...')
         plot_SB_scale_factors(epoch, run_ID)
+        
+        print(f'Plotting errors for epoch {epoch}...')
+        plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
 
 
     print('Plotting ELBO...')
