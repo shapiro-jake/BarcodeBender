@@ -63,3 +63,5 @@ def plot_errors(ground_truth_nuclei_x_n, ground_truth_nuclei_y_n, epoch, run_ID)
     plt.savefig(f'{run_ID}/{run_ID}_analysis/error_dist_epoch_{epoch}_{run_ID}.png') 
     
     plt.close()
+    
+    return mean_error

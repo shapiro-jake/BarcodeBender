@@ -69,7 +69,7 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
 
     print([item for item in pyro.get_param_store().items()])
     
-    parameter_save_file = f'{run_ID}/{run_ID}_parameters.save'
+    parameter_save_file = f'{run_ID}/{run_ID}_parameters_epoch_{epoch}.save'
     print(f"Saving parameters to '{parameter_save_file}'...")
     pyro.get_param_store().save(parameter_save_file)
     

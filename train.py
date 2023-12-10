@@ -53,6 +53,7 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
 
     # Initialize train and tests ELBO with empty lists.
     train_elbo = []
+    best_loc_error = 10**10
 
     # Run training loop.  Use try to allow for keyboard interrupt.
     try:
@@ -93,13 +94,20 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
                 plot_SB_scale_factors(epoch, run_ID)
                 
                 print(f'Plotting errors for epoch {epoch}...')
-                plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
+                mean_loc_error = plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
+                if mean_loc_error < best_loc_error:
+                    best_parameter_save_file = f'{run_ID}/{run_ID}_best_parameters_epoch_{epoch}.save'
+
+                    print(f"Better parameters at epoch {epoch}, saving parameters to '{best_parameter_save_file}'...")
+                    pyro.get_param_store().save(best_parameter_save_file)
+
+                
 
     # Exception allows program to continue after ending inference prematurely.
     except KeyboardInterrupt:
         print(f"Inference procedure stopped by keyboard interrupt at epoch {epoch}... ")
         
-        parameter_save_file = f'{run_ID}/{run_ID}_parameters.save'
+        parameter_save_file = f'{run_ID}/{run_ID}_parameters_epoch_{epoch}.save'
         print(f"Saving parameters to '{parameter_save_file}'...")
         pyro.get_param_store().save(parameter_save_file)
         
