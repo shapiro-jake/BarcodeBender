@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 import sys
 from plotting import plot_nuc_locs, plot_SB_scale_factors, plot_elbo
-from analysis import plot_errors
+from analysis import plot_errors #, plot_log_probs
 
 
 
@@ -75,6 +75,9 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
                 print(f'Plotting errors for epoch {epoch}...')
                 plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
                 
+                # print(f'Plotting log probs for epoch {epoch}...')
+                # plot_log_probs(data, epoch, run_ID)
+                
             total_epoch_loss_train = train_epoch(svi, data)
             train_elbo.append(-total_epoch_loss_train)
 
@@ -86,7 +89,7 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
                 print("[epoch %03d]  average training loss: %.4f"
                             % (epoch, total_epoch_loss_train))
                 
-            if epoch % 100 == 0:
+            if epoch % 50 == 0:
                 print(f'Plotting nuclei for epoch {epoch}...')
                 plot_nuc_locs(epoch, run_ID)
                     
@@ -95,11 +98,15 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
                 
                 print(f'Plotting errors for epoch {epoch}...')
                 mean_loc_error = plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
+                
                 if mean_loc_error < best_loc_error:
                     best_parameter_save_file = f'{run_ID}/{run_ID}_parameters/{run_ID}_best_parameters_epoch_{epoch}.save'
 
                     print(f"Better parameters at epoch {epoch}, saving parameters to '{best_parameter_save_file}'...")
                     pyro.get_param_store().save(best_parameter_save_file)
+                    
+                # print(f'Plotting log probs for epoch {epoch}...')
+                # plot_log_probs(data, epoch, run_ID)
 
                 
 
@@ -119,6 +126,9 @@ def run_training(svi, data, epochs, run_ID, gt_nuclei_x_n, gt_nuclei_y_n):
         
         print(f'Plotting errors for epoch {epoch}...')
         plot_errors(gt_nuclei_x_n, gt_nuclei_y_n, epoch, run_ID)
+        
+        # print(f'Plotting log probs for epoch {epoch}...')
+        # plot_log_probs(data, epoch, run_ID)
 
 
     print('Plotting ELBO...')

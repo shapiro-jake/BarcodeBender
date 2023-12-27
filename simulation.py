@@ -2,7 +2,8 @@ import consts
 from load_h5ad import load_data
 from train import run_training
 from plotting import plot_nuc_locs, plot_CB, plot_simulation
-from model import cluster_18_model, cluster_18_simulation_model
+from model import model, simulation_model
+from make_movie import make_movie
 
 import torch
 import pyro
@@ -34,13 +35,13 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
     
     # Let the guide be inferred by AutoDelta to start
     if init == 'random':
-        guide = AutoDelta(cluster_18_model)
+        guide = AutoDelta(model)
     elif init == 'optimal':
-        guide = AutoDelta(cluster_18_model, c18_init)
+        guide = AutoDelta(model, c18_init)
 
 
     # Visualize model and guide
-    pyro.render_model(cluster_18_model, model_args=(data,), render_distributions=True, render_params=True, filename = f'{run_ID}/{run_ID}_model_viz.png')
+    pyro.render_model(model, model_args=(data,), render_distributions=True, render_params=True, filename = f'{run_ID}/{run_ID}_model_viz.png')
     pyro.render_model(guide, model_args=(data,), render_distributions=True, render_params=True, filename = f'{run_ID}/{run_ID}_guide_viz.png')
 
     # Loss function is ELBO
@@ -49,6 +50,10 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
     # Set up optimizer
     learning_rate = 0.005
     betas = (0.95, 0.999)
+    
+    priors_file = f'{run_ID}/{run_ID}_priors.txt'
+    print(f"Saving priors to {priors_file}...'")
+    consts.write_priors(run_ID, priors_file)
     
     hyperparameters_file = f'{run_ID}/{run_ID}_run_settings.txt'
     print(f"Saving hyperparameters to '{hyperparameters_file}'...")
@@ -62,7 +67,7 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
     optimizer = pyro.optim.Adam(optimizer_args)
 
     # Set up SVI object
-    svi = SVI(cluster_18_model, guide, optimizer, loss=loss_function)
+    svi = SVI(model, guide, optimizer, loss=loss_function)
 
     # Run training.
     print("Running inference...")
@@ -75,18 +80,21 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
     print(f"Saving parameters to '{parameter_save_file}'...")
     pyro.get_param_store().save(parameter_save_file)
     
+    print('Making stopmotion...')
+    make_movie(run_ID)
+    
     print("Inference procedure complete.")
 
 if __name__ == "__main__":
-    run_ID = 'test_nuc_drop_sizes'
-    sim = 'line'
+    run_ID = 'real_c18_more_SBs_full_puck'
+    sim = False
     init = 'random'
-    epochs = 2000
+    epochs = 10000
     print_plots = True
 
     
-    c18_CBs = load_data('slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad')['CBs']
-    num_nuclei = len(c18_CBs)
+    CBs = load_data('slide_tags_data/gel_2_deep_cluster_18_CB_SB_counts_top_SBs.h5ad')['CBs']
+    num_nuclei = len(CBs)
     
     try:
         os.mkdir(run_ID)
@@ -104,23 +112,24 @@ if __name__ == "__main__":
     
     if sim == False:
         # Real Data - lad Cluster 18 data and convert it into a dense tensor for training
-        cluster_18_h5ad_file = 'slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad'
-        data = load_data(cluster_18_h5ad_file)['matrix']
+        confidently_mapped_h5ad_file = 'slide_tags_data/gel_2_deep_cluster_18_CB_SB_counts_top_SBs.h5ad'
+        data = load_data(confidently_mapped_h5ad_file)['matrix']
         data = torch.from_numpy(np.array(data.todense(), dtype=np.float32))
         
         ground_truth_df = pd.read_csv('slide_tags_data/gel_2_deep_cutoff_info.csv', index_col = 'CB')
         ground_truth_df = ground_truth_df[ground_truth_df['seurat_clusters'] == 18].drop('seurat_clusters', axis = 1)
         gt_nuclei_x_n, gt_nuclei_y_n = [], []
-        for c18_CB in c18_CBs:
+        for c18_CB in CBs:
             x_coord, y_coord = ground_truth_df.loc[c18_CB] / 1000.
             gt_nuclei_x_n.append(x_coord)
             gt_nuclei_y_n.append(y_coord)
+
 
         gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
         gt_nuclei_y_n = torch.tensor(gt_nuclei_y_n)
     else:
         if sim == 'line':
-            width = 2.88
+            width = 2.
             gt_nuclei_x_n = torch.arange(consts.R_LOC_X - width / 2, consts.R_LOC_X + width / 2, width / num_nuclei)
             gt_nuclei_y_n = torch.ones(num_nuclei) * consts.R_LOC_Y
         
@@ -129,16 +138,29 @@ if __name__ == "__main__":
             ground_truth_df = pd.read_csv('slide_tags_data/gel_2_deep_cutoff_info.csv', index_col = 'CB')
             ground_truth_df = ground_truth_df[ground_truth_df['seurat_clusters'] == 18].drop('seurat_clusters', axis = 1)
             gt_nuclei_x_n, gt_nuclei_y_n = [], []
-            for c18_CB in c18_CBs:
+            for c18_CB in CBs:
                 x_coord, y_coord = ground_truth_df.loc[c18_CB] / 1000.
                 gt_nuclei_x_n.append(x_coord)
                 gt_nuclei_y_n.append(y_coord)
 
             gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
             gt_nuclei_y_n = torch.tensor(gt_nuclei_y_n)
+            
+        elif sim == 'real':
+            ground_truth_df = pd.read_csv('slide_tags_data/gel_2_deep_cutoff_info.csv', index_col = 'CB')
+            ground_truth_df = ground_truth_df.drop('seurat_clusters', axis = 1)
+            gt_nuclei_x_n, gt_nuclei_y_n = [], []
+            for CB in CBs:
+                x_coord, y_coord = ground_truth_df.loc[CB] / 1000.
+                gt_nuclei_x_n.append(x_coord)
+                gt_nuclei_y_n.append(y_coord)
+                
+            gt_nuclei_x_n = torch.tensor(gt_nuclei_x_n)
+            gt_nuclei_y_n = torch.tensor(gt_nuclei_y_n)
+            
         elif sim == 'uniform':
-            radius = 2.5
-            center_x, center_y = 3.2 * torch.ones(num_nuclei), 3.25 * torch.ones(num_nuclei)
+            radius = 1.6
+            center_x, center_y = consts.R_LOC_X * torch.ones(num_nuclei), consts.R_LOC_Y * torch.ones(num_nuclei)
             
             r_n = radius * torch.rand(num_nuclei).sqrt()
             theta_n = 2 * math.pi * torch.rand(num_nuclei)
@@ -149,13 +171,13 @@ if __name__ == "__main__":
         else:
             raise ValueError
 
-        simulation_model = poutine.condition(cluster_18_simulation_model, {'nuclei_x_n': gt_nuclei_x_n, 'nuclei_y_n': gt_nuclei_y_n})
+        simulation_model = poutine.condition(simulation_model, {'nuclei_x_n': gt_nuclei_x_n, 'nuclei_y_n': gt_nuclei_y_n})
         data = simulation_model()
         
     if print_plots:
         print('Plotting simulated data...')
         plot_simulation(run_ID, gt_nuclei_x_n, gt_nuclei_y_n, num_nuclei, data)
-    
+
     pyro.clear_param_store()
     infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs)
     

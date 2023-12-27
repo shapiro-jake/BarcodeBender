@@ -3,6 +3,8 @@
 from load_h5ad import load_data
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
+import pandas as pd
 
 # Seed for random number generators.
 RANDOM_SEED = 1234
@@ -11,37 +13,49 @@ RANDOM_SEED = 1234
 EPSILON_CAPTURE_ALPHA_PRIOR = 50.
 EPSILON_CAPTURE_BETA_PRIOR = 50.
 
-# Prior on d_nuc parameters, the size of the nucleus [LogNormal(loc, scale)]
-D_NUC_LOC_PRIOR = 5.2
+# Prior on d_nuc parameters, the size of the nucleus [Normal(loc, scale)]
+# D_NUC_LOC_PRIOR = 100
+# D_NUC_SCALE_PRIOR = 10
+
+D_NUC_LOC_PRIOR = 4.83
 D_NUC_SCALE_PRIOR = 0.3
 
 # Prior of rho_SB parameters, the scale factor of the beads [LogNormal(loc, scale)]
-RHO_SB_LOC_PRIOR = 1.8
-RHO_SB_SCALE_PRIOR = 0.75
-
-# Prior of sigma_SB parameters, the diffusion radius of the beads [LogNormal(loc, scale)]
-SIGMA_SB_LOG_NORMAL_LOC_PRIOR = -2.6 # 75 um
-SIGMA_SB_LOG_NORMAL_SCALE_PRIOR = 1.
+RHO_SB_LOC_PRIOR = 5.3
+RHO_SB_SCALE_PRIOR = 1.035
 
 # Prior of sigma_SB parameters, the diffusion radius of the beads [Normal(loc, scale)]
-SIGMA_SB_LOC_PRIOR = 0.15 # 75 um
-SIGMA_SB_SCALE_PRIOR = 0.005
+SIGMA_SB_LOC_PRIOR = 0.5 # 150 um
+SIGMA_SB_SCALE_PRIOR = 0.01
 
 # Prior of sigma_SB, the diffusion radius of the beads, for simulation
-SIGMA_SB_SIM = 0.075 # 75 um
+SIGMA_SB_SIM_LOC = 0.05 # 50 um
 
-# Prior of starting cell positions, (4,250, 2,750)
-R_LOC_X = 4.25
-R_LOC_Y = 2.75
+# Prior of starting cell positions, (4,000, 3,000)
+R_LOC_X = 3.2
+R_LOC_Y = 3.2
 
 # Prior of d_drop_loc and d_drop_scale [LogNormal(loc, scale)]
-D_DROP_LOC_PRIOR = 5.9 # the average number of SBs in an ambient droplet
-D_DROP_SCALE_PRIOR = 0.3
+D_DROP_LOC_PRIOR = 7.099 # the average number of SBs in an ambient droplet
+D_DROP_SCALE_PRIOR = 0.295
 
+def write_priors(run_ID, priors_file):
+    with open(priors_file, 'w') as f:
+        f.write(f'Hyperparameters for run {run_ID}:\n\n')
+        f.write(f'Epsilon capture alpha: {EPSILON_CAPTURE_ALPHA_PRIOR}\n')
+        f.write(f'D_nuc_loc: {D_NUC_LOC_PRIOR}\n')
+        f.write(f'D_nuc_scale: {D_NUC_SCALE_PRIOR}\n')
+        f.write(f'Rho_SB_loc: {RHO_SB_LOC_PRIOR}\n')
+        f.write(f'Rho_SB_scale: {RHO_SB_SCALE_PRIOR}\n')
+        f.write(f'Sigma_SB_loc: {SIGMA_SB_LOC_PRIOR}\n')
+        f.write(f'Sigma_SB_scale: {SIGMA_SB_SCALE_PRIOR}\n')
+        f.write(f'D_drop_loc: {D_DROP_LOC_PRIOR}\n')
+        f.write(f'D_drop_scale: {D_DROP_SCALE_PRIOR}\n')
+        
 # Calculate the ambient SB profile from pre-determined ambient droplets
 def CALCULATE_AMBIENT():
     print('Calculating ambient profile...')
-    AMBIENT_DATA_H5AD_FILE = 'slide_tags_data/ambient_CB_SB_counts_top_SBs.h5ad'
+    AMBIENT_DATA_H5AD_FILE = 'slide_tags_data/gel_2_deep_ambient_CB_SB_counts_top_SBs.h5ad'
     CHI_AMBIENT = np.array(load_data(AMBIENT_DATA_H5AD_FILE)['matrix'].sum(axis = 0)).squeeze()
     CHI_AMBIENT = torch.tensor(CHI_AMBIENT / CHI_AMBIENT.sum()).float()
     return CHI_AMBIENT
@@ -61,3 +75,33 @@ def GET_SB_LOCS():
     return ORDERED_SB_LOCATIONS
 
 GET_SB_LOCS = GET_SB_LOCS()
+
+
+
+
+def GET_RHO_SBS():
+
+    print('Getting RHO_SBs...')
+    RHO_SBs = []
+    with open('slide_tags_data/gel_2_deep_scaled_chi_ambient_rho_top_SBs.txt', 'r') as f:
+        for line in f.readlines():
+            RHO_SBs.append(float(line))
+    
+    fig, ax = plt.subplots()
+    ax.set_title(f'Fixed scale factor for SBs')
+    ax.set_xlabel('x_um')
+    ax.set_ylabel('y_um')
+    ax.set_xlim(0,6500)
+    ax.set_ylim(0,6500)
+    
+    SB_LOCS = np.asarray(GET_SB_LOCS) * 1000
+    x_SB_coords, y_SB_coords = SB_LOCS[:,0], SB_LOCS[:,1]
+    plotting_df = pd.DataFrame(data = {'x_coords': x_SB_coords, 'y_coords': y_SB_coords, 'rho_SBs': RHO_SBs}).sort_values('rho_SBs', ascending=True)
+    sc = ax.scatter(plotting_df['x_coords'], plotting_df['y_coords'], s = 5, c = np.log(plotting_df['rho_SBs']), alpha = 1, cmap = 'Blues')
+    
+    fig.colorbar(sc)
+    plt.savefig(f'fixed_RHO_SBs_from_c18_data.png')
+    plt.close()
+    return RHO_SBs
+
+RHO_SBS = GET_RHO_SBS()
