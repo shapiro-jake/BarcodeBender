@@ -1,5 +1,0 @@
-simulation_line_Normal_Cauchy_wide Settings
-
-Learning rate: 0.005
-Betas: (0.95, 0.999)
-Epochs: 2400

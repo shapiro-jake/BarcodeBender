@@ -1,5 +1,0 @@
-simulation_line_DR_param Settings
-
-Learning rate: 0.002
-Betas: (0.95, 0.999)
-Epochs: 2000

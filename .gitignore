@@ -1,5 +1,3 @@
-c18_slide_tags_data/cluster_18_CB_SB_counts_top_SBs.h5ad
-c18_slide_tags_data/ambient_CB_SB_counts_top_SBs.h5ad
-
-slide_tags_data/confidently_mapped_CB_SB_counts_top_SBs.h5ad
-slide_tags_data/ambient_CB_SB_counts_top_SBs.h5ad
+model_runs/
+DBSCAN_data/
+slide_tags_data/
