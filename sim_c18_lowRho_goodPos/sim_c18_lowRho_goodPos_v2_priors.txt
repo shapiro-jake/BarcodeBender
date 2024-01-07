@@ -1,0 +1,11 @@
+Hyperparameters for run sim_c18_lowRho_goodPos_v2:
+
+Epsilon capture alpha: 50.0
+D_nuc_loc: 4.83
+D_nuc_scale: 0.5
+Rho_SB_loc: 0
+Rho_SB_scale: 0.3
+Sigma_SB_loc: 0.5
+Sigma_SB_sim_loc: 0.025
+D_drop_loc: 7.099
+D_drop_scale: 0.295

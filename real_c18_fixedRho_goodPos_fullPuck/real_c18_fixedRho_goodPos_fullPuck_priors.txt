@@ -1,0 +1,9 @@
+Hyperparameters for run real_c18_fixedRho_goodPos_fullPuck:
+
+Epsilon capture alpha: 50.0
+D_nuc_loc: 4.83
+D_nuc_scale: 0.5
+Sigma_SB_loc: 1
+Sigma_SB_sim_loc: 0.025
+D_drop_loc: 7.099
+D_drop_scale: 0.295

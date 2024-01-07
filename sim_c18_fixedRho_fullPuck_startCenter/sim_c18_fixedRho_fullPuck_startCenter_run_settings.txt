@@ -1,0 +1,5 @@
+sim_c18_fixedRho_fullPuck_startCenter Settings
+
+Learning rate: 0.005
+Betas: (0.95, 0.999)
+Epochs: 10000
