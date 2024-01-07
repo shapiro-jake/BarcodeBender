@@ -89,12 +89,12 @@ def infer_simulation(data, run_ID, init, gt_nuclei_x_n, gt_nuclei_y_n, epochs):
 
 if __name__ == "__main__":
     # Command center
-    run_ID = 'sim_c18_lowRho_fullPuck_startCenter'
+    run_ID = 'data_viz'
     sim = False
     init = 'random' # random or center
     epochs = 1000
     print_plots = True # Plot images of data, real or simulated
-    run_inference = True
+    run_inference = False
 
     
     CBs = load_data('slide_tags_data/gel_2_deep_cluster_18_CB_SB_counts_top_SBs.h5ad')['CBs']
